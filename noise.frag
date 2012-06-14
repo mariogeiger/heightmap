@@ -11,8 +11,8 @@ out vec4 color;
 void main(void)
 {
     vec2 d = (pos - pos0) / step;
-    float a = clamp(length(d), 0.0, 1.0);
-    color = vec4(a, a, a, 1.0);
+//    float a = clamp(length(d), 0.0, 1.0);
+//    color = vec4(a, a, a, 1.0);
 //    return;
 
     //on récupère les vecteurs et on pondère
@@ -20,6 +20,10 @@ void main(void)
     float t = dot(grad[1], d + vec2(0.0, 1.0));
     float u = dot(grad[2], d + vec2(-1.0, 1.0));
     float v = dot(grad[3], d + vec2(-1.0, 0.0));
+//    s = -1;
+//    t = -1;
+//    u = 1;
+//    v = 1;
 
     //Lissage
     float Cx = 3.0 * d.x * d.x - 2.0 * abs(d.x * d.x * d.x);

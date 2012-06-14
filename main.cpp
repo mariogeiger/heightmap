@@ -8,7 +8,11 @@
 #include <QtOpenGL/QGLShaderProgram>
 #include <QtOpenGL/QGLFramebufferObject>
 #include <QtOpenGL/QGLPixelBuffer>
+#include <QtOpenGL/QGLBuffer>
 #include <cmath>
+#include <iostream>
+
+using namespace std;
 
 QImage noise(QSize size, int octave, float persistence);
 void initRandomPerm(GLint *perm, GLint count);
@@ -18,12 +22,12 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     qsrand(a.applicationPid());
     
-    qDebug() << "Start application";
+    qDebug() << "Start application pid(" << a.applicationPid() << ")";
     QTime time;
     time.start();
     int w = 1024;
     int h = 1024;
-    int octave = 5;
+    int octave = 8;
     float persistence = 0.5;
 
     qDebug() << "w(" << w << ") h(" << h << ") octave(" << octave << ") persistence(" << persistence << ")";
@@ -64,15 +68,16 @@ QImage noise(QSize size, int octave, float persistence)
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_ONE, GL_ONE);
 
-    GLint perm[256];
+#define PERMUTATION_SIZE 64
+    GLint perm[PERMUTATION_SIZE];
     int divide = 1;
     float amplitude = (1.0 - persistence) / (1.0 - std::pow(persistence, octave));
 
     for (int o = 0; o < octave; ++o) {
         float step = 1.0 / float(divide);
 
-        initRandomPerm(perm, 256);
-        p.setUniformValueArray("perm", perm, 256);
+        initRandomPerm(perm, PERMUTATION_SIZE);
+        p.setUniformValueArray("perm", perm, PERMUTATION_SIZE);
         p.setUniformValue("amplitude", amplitude);
         p.setUniformValue("step", step);
         qDebug() << "octave #" << o+1 << " : amplitude(" << amplitude << ") step(" << step << ")";
@@ -106,5 +111,6 @@ void initRandomPerm(GLint *perm, GLint count)
     }
     for (GLint i = 0; i < count; ++i) {
         perm[i] = bag.takeAt(qrand() % bag.size());
+//        cout << perm[i] << ", ";
     }
 }
