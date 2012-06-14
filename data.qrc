@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/files">
+        <file>noise.frag</file>
+        <file>noise.vert</file>
+    </qresource>
+</RCC>
