@@ -1,6 +1,8 @@
+
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTime>
 #include <QtCore/QDebug>
+#include <QtCore/QCryptographicHash>
 #include <QtGui/QApplication>
 #include <QtGui/QImage>
 #include <QtOpenGL/QGLFormat>
@@ -27,7 +29,7 @@ int main(int argc, char *argv[])
     time.start();
     int w = 1024;
     int h = 1024;
-    int octave = 8;
+    int octave = 5;
     float persistence = 0.5;
 
     qDebug() << "w(" << w << ") h(" << h << ") octave(" << octave << ") persistence(" << persistence << ")";
@@ -37,6 +39,9 @@ int main(int argc, char *argv[])
     qDebug() << "Map created in " << time.elapsed() << "ms.";
 
     map.save("map.jpg");
+
+    QByteArray data((const char*)map.constBits(), map.byteCount());
+    qDebug() << QCryptographicHash::hash(data, QCryptographicHash::Sha1).toHex();
 
     qDebug() << "Map saved";
 
@@ -49,11 +54,18 @@ QImage noise(QSize size, int octave, float persistence)
     if (!pb.makeCurrent())
         qDebug() << "makeCurrent error";
 
+    GLint max;
+    glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &max);
+    qDebug() << "GL_MAX_VERTEX_UNIFORM_COMPONENTS" << max;
+
     QGLShaderProgram p;
-    p.addShaderFromSourceFile(QGLShader::Vertex, ":/files/noise.vert");
-    p.addShaderFromSourceFile(QGLShader::Fragment, ":/files/noise.frag");
+    p.addShaderFromSourceFile(QGLShader::Vertex, ":/noise.vert");
+    p.addShaderFromSourceFile(QGLShader::Fragment, ":/noise.frag");
     p.bindAttributeLocation("vertex", 0);
-    p.link();
+    qDebug() << "link" << p.link();
+
+    int permLocation = p.uniformLocation("perm");
+    qDebug() << "perm location : " << permLocation;
 
     p.bind();
     p.enableAttributeArray(0);
@@ -68,18 +80,19 @@ QImage noise(QSize size, int octave, float persistence)
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_ONE, GL_ONE);
 
-#define PERMUTATION_SIZE 64
-    GLint perm[PERMUTATION_SIZE];
+    GLint perm[256];
     int divide = 1;
     float amplitude = (1.0 - persistence) / (1.0 - std::pow(persistence, octave));
 
     for (int o = 0; o < octave; ++o) {
         float step = 1.0 / float(divide);
 
-        initRandomPerm(perm, PERMUTATION_SIZE);
-        p.setUniformValueArray("perm", perm, PERMUTATION_SIZE);
+        initRandomPerm(perm, 256);
+        p.setUniformValueArray(permLocation, perm, 256);
         p.setUniformValue("amplitude", amplitude);
         p.setUniformValue("step", step);
+
+
         qDebug() << "octave #" << o+1 << " : amplitude(" << amplitude << ") step(" << step << ")";
 
         glBegin(GL_QUADS);
@@ -111,6 +124,5 @@ void initRandomPerm(GLint *perm, GLint count)
     }
     for (GLint i = 0; i < count; ++i) {
         perm[i] = bag.takeAt(qrand() % bag.size());
-//        cout << perm[i] << ", ";
     }
 }
