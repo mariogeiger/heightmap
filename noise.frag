@@ -17,10 +17,6 @@ void main(void)
     float t = dot(grad[1], d + vec2(0.0, 1.0));
     float u = dot(grad[2], d + vec2(-1.0, 1.0));
     float v = dot(grad[3], d + vec2(-1.0, 0.0));
-    //    s = -1;
-    //    t = -1;
-    //    u = 1;
-    //    v = 1;
 
     //Lissage
     float Cx = 3.0 * d.x * d.x - 2.0 * abs(d.x * d.x * d.x);
@@ -31,6 +27,10 @@ void main(void)
     float Cy = 3.0 * d.y * d.y - 2.0 * abs(d.y * d.y * d.y);
 
     float noise = Li1 + Cy*(Li2-Li1);
+
+    //Amplitude
     float z = amplitude * (noise + 1.0) / 2.0;
+
+    //Niveau de gris
     color = vec4(z, z, z, 1.0);
 }

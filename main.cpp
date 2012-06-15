@@ -24,26 +24,25 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     qsrand(a.applicationPid());
     
-    qDebug() << "Start application pid(" << a.applicationPid() << ")";
+    cout << "Start application pid(" << a.applicationPid() << ")" << endl;
     QTime time;
     time.start();
     int w = 1024;
     int h = 1024;
-    int octave = 5;
+    int octave = 9;
     float persistence = 0.5;
 
-    qDebug() << "w(" << w << ") h(" << h << ") octave(" << octave << ") persistence(" << persistence << ")";
+    cout << "w(" << w << ") h(" << h << ") octave(" << octave << ") persistence(" << persistence << ")" << endl;
 
     QImage map = noise(QSize(w, h), octave, persistence);
 
-    qDebug() << "Map created in " << time.elapsed() << "ms.";
+    cout << "Map created in " << time.elapsed() << "ms." << endl;
 
     map.save("map.jpg");
 
     QByteArray data((const char*)map.constBits(), map.byteCount());
-    qDebug() << QCryptographicHash::hash(data, QCryptographicHash::Sha1).toHex();
 
-    qDebug() << "Map saved";
+    cout << "Map saved (" << QCryptographicHash::hash(data, QCryptographicHash::Sha1).toHex().constData() << ")" << endl;
 
     return 0;
 }
@@ -51,21 +50,19 @@ int main(int argc, char *argv[])
 QImage noise(QSize size, int octave, float persistence)
 {
     QGLPixelBuffer pb(size);
-    if (!pb.makeCurrent())
-        qDebug() << "makeCurrent error";
-
-    GLint max;
-    glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &max);
-    qDebug() << "GL_MAX_VERTEX_UNIFORM_COMPONENTS" << max;
+    if (!pb.makeCurrent()) {
+        qWarning() << "makeCurrent error";
+        return QImage();
+    }
 
     QGLShaderProgram p;
     p.addShaderFromSourceFile(QGLShader::Vertex, ":/noise.vert");
     p.addShaderFromSourceFile(QGLShader::Fragment, ":/noise.frag");
     p.bindAttributeLocation("vertex", 0);
-    qDebug() << "link" << p.link();
-
-    int permLocation = p.uniformLocation("perm");
-    qDebug() << "perm location : " << permLocation;
+    if (!p.link()) {
+        qWarning() << "link error";
+    return QImage();
+}
 
     p.bind();
     p.enableAttributeArray(0);
@@ -84,24 +81,24 @@ QImage noise(QSize size, int octave, float persistence)
     int divide = 1;
     float amplitude = (1.0 - persistence) / (1.0 - std::pow(persistence, octave));
 
-    for (int o = 0; o < octave; ++o) {
+    for (int oc = 0; oc < octave; ++oc) {
         float step = 1.0 / float(divide);
 
         initRandomPerm(perm, 256);
-        p.setUniformValueArray(permLocation, perm, 256);
+        p.setUniformValueArray("perm", perm, 256);
         p.setUniformValue("amplitude", amplitude);
         p.setUniformValue("step", step);
 
 
-        qDebug() << "octave #" << o+1 << " : amplitude(" << amplitude << ") step(" << step << ")";
+        cout << "octave #" << oc+1 << " : amplitude(" << amplitude << ") step(" << step << ")" << endl;
 
         glBegin(GL_QUADS);
-        for (int yy = 0; yy < divide; ++yy) {
-            for (int xx = 0; xx < divide; ++xx) {
-                glVertex2f(xx * step * 2.0 - 1.0, yy * step * 2.0 - 1.0);
-                glVertex2f((xx+1) * step * 2.0 - 1.0, yy * step * 2.0 - 1.0);
-                glVertex2f((xx+1) * step * 2.0 - 1.0, (yy+1) * step * 2.0 - 1.0);
-                glVertex2f(xx * step * 2.0 - 1.0, (yy+1) * step * 2.0 - 1.0);
+        for (int y = 0; y < divide; ++y) {
+            for (int x = 0; x < divide; ++x) {
+                glVertex2f(x * step * 2.0 - 1.0, y * step * 2.0 - 1.0);
+                glVertex2f((x+1) * step * 2.0 - 1.0, y * step * 2.0 - 1.0);
+                glVertex2f((x+1) * step * 2.0 - 1.0, (y+1) * step * 2.0 - 1.0);
+                glVertex2f(x * step * 2.0 - 1.0, (y+1) * step * 2.0 - 1.0);
             }
         }
         glEnd();
