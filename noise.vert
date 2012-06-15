@@ -8,8 +8,6 @@ flat out vec2 grad[4];
 flat out vec2 pos0;
 noperspective out vec2 pos;
 
-#extension GL_EXT_gpu_shader4 : enable
-
 void main(void)
 {
     gl_Position = vec4(vertex, 0.0, 1.0);
